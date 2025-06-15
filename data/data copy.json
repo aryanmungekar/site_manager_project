@@ -1,0 +1,26 @@
+[
+  {
+    "lat": 18.784369555555557,
+    "lon": 72.92773258333334,
+    "title": "Corner 11",
+    "img": "https://github.com/ianare/exif-samples/blob/5332a9cf0220e9c6c93f88a187daa90808051e10/jpg/gps/DSCN0010.jpg?raw=true"
+  },
+  {
+    "lat": 18.784517416666667,
+    "lon": 72.9277493888889,
+    "title": "Corner 2",
+    "img": "https://github.com/ianare/exif-samples/blob/master/jpg/gps/DSCN0012.jpg?raw=true"
+  },
+  {
+    "lat": 18.784698333333335,
+    "lon": 72.92776361111112,
+    "title": "Corner 3",
+    "img": "https://github.com/ianare/exif-samples/blob/master/jpg/gps/DSCN0021.jpg?raw=true"
+  },
+  {
+    "lat": 18.784873611111113,
+    "lon": 72.92778075000001,
+    "title": "Corner 4",
+    "img": "https://github.com/ianare/exif-samples/blob/master/jpg/gps/DSCN0040.jpg?raw=true"
+  }
+]
