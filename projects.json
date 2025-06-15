@@ -1,0 +1,50 @@
+[
+  {
+    "file": "ravet.json",
+    "projectName": "My House Project",
+    "location": "Ravet, Pune",
+    "thumbnail": "https://noahinfra.in/wp-content/uploads/2023/11/Residential-Construction-company-in-coimbatore.jpg"
+  },
+  {
+    "file": "baner.json",
+    "projectName": "Office Tower",
+    "location": "Baner, Pune",
+    "thumbnail": "https://www.letsbuild.com/wp-content/uploads/2023/07/Depositphotos_89120612_s-2019.jpg"
+  },
+  {
+    "file": "ravet.json",
+    "projectName": "School Project",
+    "location": "Ravet, Pune",
+    "thumbnail": "https://assets-news.housing.com/news/wp-content/uploads/2022/10/12093520/Types-of-building-materials-686x400.jpg"
+  },
+  {
+    "file": "baner.json",
+    "projectName": "Tower Project",
+    "location": "Baner, Pune",
+    "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT20Es7TOLnYJQn4iKFaDeknv2p6edMEIjFYg&s"
+  },
+  {
+    "file": "ravet.json",
+    "projectName": "My House Project",
+    "location": "Ravet, Pune",
+    "thumbnail": "https://noahinfra.in/wp-content/uploads/2023/11/Residential-Construction-company-in-coimbatore.jpg"
+  },
+  {
+    "file": "baner.json",
+    "projectName": "Office Tower",
+    "location": "Baner, Pune",
+    "thumbnail": "https://www.letsbuild.com/wp-content/uploads/2023/07/Depositphotos_89120612_s-2019.jpg"
+  },
+  {
+    "file": "ravet.json",
+    "projectName": "School Project",
+    "location": "Ravet, Pune",
+    "thumbnail": "https://assets-news.housing.com/news/wp-content/uploads/2022/10/12093520/Types-of-building-materials-686x400.jpg"
+  },
+  {
+    "file": "baner.json",
+    "projectName": "Tower Project",
+    "location": "Baner, Pune",
+    "thumbnail": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT20Es7TOLnYJQn4iKFaDeknv2p6edMEIjFYg&s"
+  }
+]

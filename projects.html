@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>House Corners Image Map</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- Pannellum CSS & JS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum/build/pannellum.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pannellum/build/pannellum.js"></script>
+
+  <style>
+    :root {
+      --primary: #007bff;
+      --primary-light: #e3f0ff;
+      --background: #f8fafc;
+      --card-bg: #fff;
+      --border-radius: 14px;
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.09);
+      --transition: 0.3s cubic-bezier(.4, 2, .6, 1);
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--background);
+      min-height: 100vh;
+      color: #222;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 0 40px 0;
+    }
+
+    h1 {
+      margin: 32px 0 10px 0;
+      font-size: 2.2rem;
+      color: var(--primary);
+      letter-spacing: 1px;
+      font-weight: 700;
+      text-shadow: 0 2px 8px #b3d8ff44;
+    }
+
+    /* Top section: project info + slider side by side */
+    .top-section {
+      display: flex;
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto 24px auto;
+      gap: 32px;
+      align-items: stretch;
+      box-sizing: border-box;
+    }
+
+    .project-info {
+      flex: 0 0 30%;
+      max-width: 30%;
+      min-width: 180px;
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      padding: 24px 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      box-sizing: border-box;
+    }
+
+    .project-thumb {
+      width: 90px;
+      height: 90px;
+      object-fit: cover;
+      border-radius: 14px;
+      background: #e3f0ff;
+      border: 1.5px solid #b3d8ff;
+      box-shadow: 0 2px 8px #007bff11;
+      margin-bottom: 10px;
+    }
+
+    .project-title {
+      font-size: 1.25em;
+      font-weight: 600;
+      color: #007bff;
+      margin-bottom: 4px;
+      text-align: center;
+    }
+
+    .project-location {
+      font-size: 1.05em;
+      color: #555;
+      margin-bottom: 2px;
+      text-align: center;
+    }
+
+    .project-file {
+      font-size: 0.95em;
+      color: #888;
+      text-align: center;
+    }
+
+    .slider-section {
+      flex: 0 0 70%;
+      max-width: 70%;
+      min-width: 220px;
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      padding: 24px 28px 18px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      box-sizing: border-box;
+    }
+
+    .slider-label {
+      font-size: 1.15em;
+      color: var(--primary);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      width: 100%;
+    }
+
+    #dateSlider {
+      flex: 1 1 0;
+      width: 100%;
+      height: 28px;
+      accent-color: var(--primary);
+      border-radius: 8px;
+      background: linear-gradient(90deg, var(--primary-light) 0%, #b3d8ff 100%);
+      box-shadow: 0 2px 8px rgba(0, 123, 255, 0.08);
+      transition: box-shadow var(--transition);
+    }
+
+    #sliderDateLabel {
+      font-size: 1.1em;
+      color: #222;
+      font-weight: 500;
+      background: var(--primary-light);
+      padding: 6px 16px;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+      min-width: 110px;
+      text-align: center;
+      margin-left: 10px;
+    }
+
+    #sliderDates {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      font-size: 13px;
+      color: var(--primary);
+      margin-top: 8px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-shadow: 0 1px 2px #fff;
+      padding: 0 2px;
+    }
+
+    /* Category Buttons */
+    #categoryButtons {
+      margin: 16px 0 18px 0;
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    #categoryButtons button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 22px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 8px #007bff22;
+      transition: background var(--transition), transform var(--transition);
+    }
+
+    #categoryButtons button:hover {
+      background: #0056b3;
+      transform: translateY(-2px) scale(1.04);
+    }
+
+    /* Image Grid */
+    #imageRow {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 22px;
+      width: 100%;
+      max-width: 1200px;
+      margin-bottom: 24px;
+      padding: 0 12px;
+    }
+
+    #imageRow img {
+      width: 100%;
+      height: 320px;
+      object-fit: cover;
+      cursor: pointer;
+      border: 2px solid transparent;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+      background: #f3f7fa;
+    }
+
+    #imageRow img:hover {
+      border-color: var(--primary);
+      box-shadow: 0 8px 32px #007bff33;
+      transform: scale(1.025);
+    }
+
+    /* Map Popup */
+    #mapPopup {
+      position: fixed;
+      top: 60%;
+      left: 75%;
+      width: 370px;
+      height: 270px;
+      background: var(--card-bg);
+      border: 2px solid var(--primary);
+      border-radius: var(--border-radius);
+      box-shadow: 0 0 18px rgba(0, 0, 0, 0.18);
+      z-index: 3000;
+      display: none;
+      flex-direction: column;
+      resize: both;
+      overflow: hidden;
+      min-width: 220px;
+      min-height: 180px;
+      max-width: 98vw;
+      max-height: 80vh;
+      transition: box-shadow var(--transition);
+    }
+
+    #mapHeader {
+      background-color: var(--primary);
+      color: white;
+      padding: 10px;
+      cursor: move;
+      border-top-left-radius: var(--border-radius);
+      border-top-right-radius: var(--border-radius);
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1.1em;
+      font-weight: 600;
+    }
+
+    #closeBtn {
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 22px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: color var(--transition);
+    }
+
+    #closeBtn:hover {
+      color: #ffd700;
+    }
+
+    #map {
+      flex-grow: 1;
+      min-height: 120px;
+    }
+
+    /* Photo Popup */
+    #photoPopup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.96);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 2000;
+      pointer-events: none;
+      padding: 0 10px;
+    }
+
+    #photoPopup img,
+    #popupTitle,
+    .popupControls,
+    #navButtons {
+      pointer-events: auto;
+    }
+
+    #popupImg {
+      height: 60vh;
+      max-width: 96vw;
+      max-height: 80vh;
+      border-radius: var(--border-radius);
+      box-shadow: 0 8px 32px #0008;
+      background: #fff;
+      margin-bottom: 18px;
+    }
+
+    #popupTitle {
+      color: white;
+      font-size: 1.3em;
+      margin: 10px 0 18px 0;
+      font-weight: 600;
+      text-align: center;
+      text-shadow: 0 2px 8px #000a;
+    }
+
+    .popupControls {
+      position: absolute;
+      top: 18px;
+      right: 24px;
+      z-index: 10;
+    }
+
+    .popupControls button {
+      background: #fff;
+      border: none;
+      font-size: 28px;
+      margin-left: 10px;
+      cursor: pointer;
+      border-radius: 8px;
+      padding: 6px 14px;
+      box-shadow: 0 2px 8px #0002;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .popupControls button:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    #navButtons {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 10vh;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100vw;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 32px;
+      z-index: 5;
+    }
+
+    #navButtons button {
+      background: #fff;
+      border: none;
+      font-size: 1.1em;
+      padding: 12px 28px;
+      cursor: pointer;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 2px 8px #0002;
+      transition: background var(--transition), color var(--transition), transform var(--transition);
+    }
+
+    #navButtons button:hover {
+      background: var(--primary);
+      color: #fff;
+      transform: scale(1.07);
+    }
+
+    /* 360 Viewer Fullscreen Overlay */
+    #viewer360 {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90vw;
+      height: 90vh;
+      background-color: rgba(0, 0, 0, 0.97);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--border-radius);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 4000;
+      display: none;
+      overflow: hidden;
+      min-width: 240px;
+      min-height: 180px;
+      max-width: 100vw;
+      max-height: 100vh;
+      transition: box-shadow var(--transition);
+    }
+
+    #close360Btn {
+      position: absolute;
+      top: 14px;
+      right: 22px;
+      font-size: 32px;
+      font-weight: bold;
+      color: white;
+      background: rgba(0, 0, 0, 0.7);
+      border: none;
+      padding: 6px 16px;
+      cursor: pointer;
+      z-index: 4100;
+      border-radius: 8px;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    #close360Btn:hover {
+      background: #fff;
+      color: var(--primary);
+    }
+
+    #pano {
+      width: 100%;
+      height: 100%;
+      border-radius: var(--border-radius);
+      background: #222;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 900px) {
+      .top-section {
+        flex-direction: column;
+        gap: 18px;
+        max-width: 98vw;
+      }
+
+      .project-info,
+      .slider-section {
+        max-width: 100%;
+        width: 100%;
+        min-width: 0;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .slider-section {
+        padding: 14px 4vw 10px 4vw;
+      }
+
+      #imageRow {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        padding: 0 2vw;
+      }
+
+      #popupImg {
+        height: 38vh;
+        max-width: 98vw;
+      }
+
+      #navButtons {
+        padding: 0 6vw;
+      }
+
+      #mapPopup {
+        width: 98vw;
+        min-width: 120px;
+        height: 180px;
+      }
+
+      #viewer360 {
+        width: 100vw;
+        height: 60vh;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Ravet</h1>
+  <br>
+
+  <div class="top-section">
+    <div id="projectInfo" class="project-info">
+      <img id="projectThumb" src="" alt="Project Thumbnail" class="project-thumb">
+      <div>
+        <div id="projectName" class="project-title"></div>
+        <div id="projectLocation" class="project-location"></div>
+        <div id="projectFile" class="project-file"></div>
+      </div>
+    </div>
+    <div class="slider-section">
+      <div class="slider-label"><strong>Date Slider:</strong></div>
+      <div class="slider-row">
+        <input type="range" id="dateSlider" min="0" max="0" value="0" step="1">
+        <span id="sliderDateLabel"></span>
+      </div>
+      <div id="sliderDates"></div>
+    </div>
+  </div>
+
+  <div id="categoryButtons" style="display: none;">
+    <button onclick="loadCategory('drone')">Drone Images</button>
+    <button onclick="loadCategory('panoramic')">Panoramic Images</button>
+    <button onclick="loadCategory('video')">Videos</button>
+  </div>
+
+  <div id="imageRow"></div>
+
+  <div id="mapPopup">
+    <div id="mapHeader">
+      <span>Map View</span>
+      <button id="closeBtn" title="Close Map">&times;</button>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <div id="photoPopup">
+    <div class="popupControls">
+      <button id="closePhotoBtn">&times;</button>
+    </div>
+    <div id="popupTitle"></div>
+    <img id="popupImg" src="" alt="Preview" />
+    <div id="navButtons">
+      <button id="prevBtn">⟨ Prev</button>
+      <button id="nextBtn">Next ⟩</button>
+    </div>
+  </div>
+
+  <!-- Pannellum 360 Viewer -->
+  <div id="viewer360">
+    <button id="close360Btn">&times;</button>
+    <div id="pano"></div>
+  </div>
+
+  <div id="overlay360"></div>
+
+  <script>
+    let map, markers = [], latlngs = [], isMapInitialized = false;
+    let currentIndex = 0;
+    let imagesData = [];
+    let fullData = {};
+    let selectedDate = "";
+    let selectedCategory = "";
+    let viewer360;
+    let dateList = [];
+    const dateSlider = document.getElementById('dateSlider');
+    const sliderDateLabel = document.getElementById('sliderDateLabel');
+
+    const imageRow = document.getElementById('imageRow');
+    const mapPopup = document.getElementById('mapPopup');
+    const closeBtn = document.getElementById('closeBtn');
+    const mapHeader = document.getElementById('mapHeader');
+    const photoPopup = document.getElementById('photoPopup');
+    const popupImg = document.getElementById('popupImg');
+    const popupTitle = document.getElementById('popupTitle');
+    const closePhotoBtn = document.getElementById('closePhotoBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const viewer360Container = document.getElementById('viewer360');
+    const close360Btn = document.getElementById('close360Btn');
+
+    // Get project from query string
+    const params = new URLSearchParams(window.location.search);
+    const project = params.get('project');
+    const projectFileName = project ? `${project}.json` : 'data.json';
+
+    // Fetch project info from projects.json
+    fetch('projects.json')
+      .then(res => res.json())
+      .then(projects => {
+        const meta = projects.find(p => p.file === projectFileName);
+        if (meta) {
+          document.getElementById('projectThumb').src = meta.thumbnail || 'default-thumb.jpg';
+          document.getElementById('projectName').textContent = meta.projectName || '';
+          document.getElementById('projectLocation').textContent = meta.location || '';
+          document.getElementById('projectFile').textContent = meta.file || '';
+          // Optionally update the page title and h1
+          document.title = meta.projectName || 'Project';
+          document.querySelector('h1').textContent = meta.projectName || project || '';
+        } else {
+          document.getElementById('projectThumb').src = 'default-thumb.jpg';
+          document.getElementById('projectName').textContent = project || '';
+          document.getElementById('projectLocation').textContent = '';
+          document.getElementById('projectFile').textContent = projectFileName;
+        }
+      });
+
+    // Fetch the rest of the project data from the individual file in /data
+    const projectFilePath = project ? `data/${project}.json` : 'data/data.json';
+
+    fetch(projectFilePath)
+      .then(res => res.json())
+      .then(data => {
+        fullData = data;
+        dateList = Object.keys(data);
+
+        // Setup slider
+        if (dateList.length > 0) {
+          dateSlider.min = 0;
+          dateSlider.max = dateList.length - 1;
+          dateSlider.value = 0;
+          sliderDateLabel.textContent = dateList[0];
+          selectedDate = dateList[0];
+
+          // Show all dates under the slider
+          const sliderDates = document.getElementById('sliderDates');
+          sliderDates.innerHTML = '';
+          dateList.forEach((date, idx) => {
+            const span = document.createElement('span');
+            span.textContent = date;
+            span.style.flex = '1';
+            span.style.textAlign = idx === 0 ? 'left' : (idx === dateList.length - 1 ? 'right' : 'center');
+            sliderDates.appendChild(span);
+          });
+        }
+
+        dateSlider.addEventListener('input', () => {
+          const idx = parseInt(dateSlider.value, 10);
+          sliderDateLabel.textContent = dateList[idx];
+          selectedDate = dateList[idx];
+          document.getElementById('categoryButtons').style.display = selectedDate ? 'flex' : 'none';
+          imageRow.innerHTML = '';
+          clearMarkers();
+        });
+      })
+      .catch(err => console.error('Failed to load JSON:', err));
+
+    function loadCategory(type) {
+      selectedCategory = type;
+      imageRow.innerHTML = '';
+      clearMarkers();
+
+      if (!selectedDate || !fullData[selectedDate] || !fullData[selectedDate][type]) return;
+
+      imagesData = fullData[selectedDate][type];
+      if (!imagesData.length) return;
+
+      mapPopup.style.display = 'flex';
+
+      imagesData.forEach((item, index) => {
+        const imgEl = document.createElement('img');
+        imgEl.src = item.img || 'thumbnail.jpg';
+        imgEl.alt = item.title || type;
+        imgEl.title = item.title || type;
+        imgEl.addEventListener('click', (e) => {
+          e.preventDefault(); // Prevent default link behavior if any
+          if (type === 'panoramic') {
+            open360Viewer(item.img);
+          } else {
+            openPhotoPopup(index);
+          }
+        });
+        imageRow.appendChild(imgEl);
+
+        const marker = L.marker([item.lat, item.lon]).addTo(map);
+        marker.on('click', () => {
+          if (type === 'panoramic') {
+            open360Viewer(item.img);
+          } else {
+            openPhotoPopup(index);
+          }
+        });
+        markers.push(marker);
+        latlngs.push([item.lat, item.lon]);
+      });
+
+      if (latlngs.length) {
+        map.fitBounds(L.latLngBounds(latlngs).pad(0.2));
+        map.invalidateSize();
+      }
+    }
+
+    function initializeMap() {
+      map = L.map('map').setView([0, 0], 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 22,
+      }).addTo(map);
+      isMapInitialized = true;
+      setTimeout(() => map.invalidateSize(), 300);
+    }
+
+    function clearMarkers() {
+      markers.forEach(marker => marker.remove());
+      markers = [];
+      latlngs = [];
+    }
+
+    function openPhotoPopup(index) {
+      currentIndex = index;
+      const item = imagesData[index];
+      popupImg.src = item.img || '';
+      popupTitle.textContent = item.title || '';
+      photoPopup.style.display = 'flex';
+      map.setView([item.lat, item.lon], 18);
+    }
+
+    function closePhotoPopup() {
+      photoPopup.style.display = 'none';
+    }
+
+    function showNextPhoto() {
+      currentIndex = (currentIndex + 1) % imagesData.length;
+      openPhotoPopup(currentIndex);
+    }
+
+    function showPrevPhoto() {
+      currentIndex = (currentIndex - 1 + imagesData.length) % imagesData.length;
+      openPhotoPopup(currentIndex);
+    }
+
+    closePhotoBtn.addEventListener('click', closePhotoPopup);
+    nextBtn.addEventListener('click', showNextPhoto);
+    prevBtn.addEventListener('click', showPrevPhoto);
+    closeBtn.addEventListener('click', () => mapPopup.style.display = 'none');
+
+    // 360 Viewer logic
+    function open360Viewer(imageUrl) {
+      viewer360Container.style.display = 'block';
+      document.getElementById('pano').innerHTML = '';
+      pannellum.viewer('pano', {
+        type: 'equirectangular',
+        panorama: imageUrl,
+        autoLoad: true,
+        showZoomCtrl: true,
+      });
+    }
+
+    close360Btn.addEventListener('click', () => viewer360Container.style.display = 'none');
+
+    let isDragging = false;
+    let dragStartX, dragStartY;
+    mapHeader.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      dragStartX = e.clientX - mapPopup.offsetLeft;
+      dragStartY = e.clientY - mapPopup.offsetTop;
+      // Draggable map popup
+      document.body.style.userSelect = 'none';
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+      document.body.style.userSelect = 'auto';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      mapPopup.style.left = (e.clientX - dragStartX) + 'px';
+      mapPopup.style.top = (e.clientY - dragStartY) + 'px';
+    });
+
+    // Resize observer for Leaflet map
+    const resizeObserver = new ResizeObserver(() => {
+      if (map) map.invalidateSize();
+    });
+    resizeObserver.observe(document.getElementById('mapPopup'));
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const project = params.get('project');
+      if (project) {
+        document.querySelector('h1').textContent = project.replace(/_/g, ' ');
+      }
+      initializeMap();
+    });
+    window.location.href = `projects.html?project=${encodeURIComponent(proj.file.replace('.json',''))}`;
+  </script>
+</body>
+
+</html>
