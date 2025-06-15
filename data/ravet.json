@@ -26,7 +26,21 @@
         "img": "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEik7UTBonrnSaOdZf6V3VcCqcRFvrMMrOVq3wE8gE0DcSBdadvGFG33YBonHmrkjNnqlbTo7oDk2WuNFYtkG4wbmcCp8xCHNfWqH2Mitvd-x3e4sl1NS0SdJmeRwpRWMreA21T8LdMuTIQv56oqyGZqKtwJIpmUxd_vZWd8GRRCgvnB10-ZwaAH6lx7M6DB/s320/NADIR_IMAGE%205.jfif"
       }
     ],
-    "panoramic": [],
+    "panoramic": [
+      {
+    "lat": 18.66445,
+    "lon": 73.73280277777778,
+    "title": "Corner 1",
+    "img": "https://images.unsplash.com/photo-1707405997487-557b33c87a91?q=80&w=1460&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  },
+      {
+    "lat": 18.66445,
+    "lon": 73.73280277777778,
+    "title": "Corner 1",
+    "img": "https://firebasestorage.googleapis.com/v0/b/yelloskye-fly-responsibly.appspot.com/o/Outputs%2FqxhiWnbuKmZpEE5UWbFC%2Fpanos%2F3c40e711-27db-43d5-aca8-763458094f05?alt=media&token=e3c8c09e-4756-4389-bc3c-7ea5644512ce"
+  }
+    
+    ],
     "videos": []
   },
   "2025-06-04": {
