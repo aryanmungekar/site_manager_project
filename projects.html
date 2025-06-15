@@ -440,6 +440,42 @@
       background: #222;
     }
 
+    /* Date Button Row */
+    .date-button-row {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding: 8px 0 8px 0;
+      scrollbar-width: thin;
+      scrollbar-color: #007bff #e3f0ff;
+    }
+
+    .date-btn {
+      flex: 0 0 auto;
+      padding: 10px 22px;
+      font-size: 1em;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      background: #e3f0ff;
+      color: #007bff;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 8px #007bff11;
+    }
+
+    .date-btn.selected,
+    .date-btn:active {
+      background: #007bff;
+      color: #fff;
+      box-shadow: 0 4px 16px #007bff33;
+    }
+
+    .date-btn:hover {
+      background: #b3d8ff;
+      color: #0056b3;
+    }
+
     /* Responsive Design */
     @media (max-width: 900px) {
       .top-section {
@@ -504,12 +540,8 @@
       </div>
     </div>
     <div class="slider-section">
-      <div class="slider-label"><strong>Date Slider:</strong></div>
-      <div class="slider-row">
-        <input type="range" id="dateSlider" min="0" max="0" value="0" step="1">
-        <span id="sliderDateLabel"></span>
-      </div>
-      <div id="sliderDates"></div>
+      <div class="slider-label"><strong>Select Date:</strong></div>
+      <div id="dateButtonRow" class="date-button-row"></div>
     </div>
   </div>
 
@@ -609,36 +641,47 @@
         fullData = data;
         dateList = Object.keys(data);
 
-        // Setup slider
         if (dateList.length > 0) {
-          dateSlider.min = 0;
-          dateSlider.max = dateList.length - 1;
-          dateSlider.value = 0;
-          sliderDateLabel.textContent = dateList[0];
           selectedDate = dateList[0];
-
-          // Show all dates under the slider
-          const sliderDates = document.getElementById('sliderDates');
-          sliderDates.innerHTML = '';
-          dateList.forEach((date, idx) => {
-            const span = document.createElement('span');
-            span.textContent = date;
-            span.style.flex = '1';
-            span.style.textAlign = idx === 0 ? 'left' : (idx === dateList.length - 1 ? 'right' : 'center');
-            sliderDates.appendChild(span);
-          });
+          renderDateButtons();
+          document.getElementById('categoryButtons').style.display = selectedDate ? 'flex' : 'none';
         }
+      })
+      .catch(err => console.error('Failed to load JSON:', err));
 
-        dateSlider.addEventListener('input', () => {
-          const idx = parseInt(dateSlider.value, 10);
-          sliderDateLabel.textContent = dateList[idx];
-          selectedDate = dateList[idx];
+    const dateButtonRow = document.getElementById('dateButtonRow');
+
+    function renderDateButtons() {
+      dateButtonRow.innerHTML = '';
+      dateList.forEach((date, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'date-btn' + (selectedDate === date ? ' selected' : '');
+        btn.textContent = date;
+        btn.onclick = () => {
+          selectedDate = date;
+          renderDateButtons();
           document.getElementById('categoryButtons').style.display = selectedDate ? 'flex' : 'none';
           imageRow.innerHTML = '';
           clearMarkers();
-        });
-      })
-      .catch(err => console.error('Failed to load JSON:', err));
+        };
+        dateButtonRow.appendChild(btn);
+      });
+    }
+
+    // After fetching project data:
+    if (dateList.length > 0) {
+      selectedDate = dateList[0];
+      renderDateButtons();
+      document.getElementById('categoryButtons').style.display = selectedDate ? 'flex' : 'none';
+    }
+
+    // If you want to programmatically scroll to the selected button, you can add:
+    function scrollToSelectedDate() {
+      const selectedBtn = dateButtonRow.querySelector('.selected');
+      if (selectedBtn) {
+        selectedBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+    }
 
     function loadCategory(type) {
       selectedCategory = type;
