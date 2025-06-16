@@ -257,7 +257,7 @@
     #mapHeader {
       background-color: var(--primary);
       color: white;
-      padding: 10px;
+      padding: 0px;
       cursor: move;
       border-top-left-radius: var(--border-radius);
       border-top-right-radius: var(--border-radius);
@@ -546,9 +546,9 @@
   </div>
 
   <div id="categoryButtons" style="display: none;">
-    <button onclick="loadCategory('drone')">Drone Images</button>
-    <button onclick="loadCategory('panoramic')">Panoramic Images</button>
-    <button onclick="loadCategory('video')">Videos</button>
+    <button onclick="setCategory('drone')">Drone Images</button>
+    <button onclick="setCategory('panoramic')">Panoramic Images</button>
+    <button onclick="setCategory('video')">Videos</button>
   </div>
 
   <div id="imageRow"></div>
@@ -587,7 +587,7 @@
     let imagesData = [];
     let fullData = {};
     let selectedDate = "";
-    let selectedCategory = "";
+    let selectedCategory = 'drone';
     let viewer360;
     let dateList = [];
     const dateSlider = document.getElementById('dateSlider');
@@ -645,6 +645,7 @@
           selectedDate = dateList[0];
           renderDateButtons();
           document.getElementById('categoryButtons').style.display = selectedDate ? 'flex' : 'none';
+          loadCategory('drone'); // Automatically load drone images for the first date
         }
       })
       .catch(err => console.error('Failed to load JSON:', err));
@@ -663,6 +664,7 @@
           document.getElementById('categoryButtons').style.display = selectedDate ? 'flex' : 'none';
           imageRow.innerHTML = '';
           clearMarkers();
+          loadCategory(selectedCategory); // <-- Use the last selected category
         };
         dateButtonRow.appendChild(btn);
       });
@@ -693,15 +695,13 @@
       imagesData = fullData[selectedDate][type];
       if (!imagesData.length) return;
 
-      mapPopup.style.display = 'flex';
-
       imagesData.forEach((item, index) => {
         const imgEl = document.createElement('img');
         imgEl.src = item.img || 'thumbnail.jpg';
         imgEl.alt = item.title || type;
         imgEl.title = item.title || type;
         imgEl.addEventListener('click', (e) => {
-          e.preventDefault(); // Prevent default link behavior if any
+          e.preventDefault();
           if (type === 'panoramic') {
             open360Viewer(item.img);
           } else {
@@ -728,6 +728,11 @@
       }
     }
 
+        function setCategory(type) {
+      selectedCategory = type;
+      loadCategory(type);
+    }
+
     function initializeMap() {
       map = L.map('map').setView([0, 0], 15);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -749,11 +754,13 @@
       popupImg.src = item.img || '';
       popupTitle.textContent = item.title || '';
       photoPopup.style.display = 'flex';
+      mapPopup.style.display = 'flex'; // Show map popup
       map.setView([item.lat, item.lon], 18);
     }
 
     function closePhotoPopup() {
       photoPopup.style.display = 'none';
+      mapPopup.style.display = 'none'; // Hide map popup
     }
 
     function showNextPhoto() {
@@ -774,6 +781,7 @@
     // 360 Viewer logic
     function open360Viewer(imageUrl) {
       viewer360Container.style.display = 'block';
+      mapPopup.style.display = 'flex'; // Show map popup
       document.getElementById('pano').innerHTML = '';
       pannellum.viewer('pano', {
         type: 'equirectangular',
@@ -783,7 +791,10 @@
       });
     }
 
-    close360Btn.addEventListener('click', () => viewer360Container.style.display = 'none');
+    close360Btn.addEventListener('click', () => {
+      viewer360Container.style.display = 'none';
+      mapPopup.style.display = 'none'; // Hide map popup
+    });
 
     let isDragging = false;
     let dragStartX, dragStartY;
