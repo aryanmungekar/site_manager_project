@@ -249,7 +249,7 @@
       border: 2px solid var(--primary);
       border-radius: var(--border-radius);
       box-shadow: 0 0 18px rgba(0, 0, 0, 0.18);
-      z-index: 3000;
+      z-index: 4100;
       display: none;
       flex-direction: column;
       resize: both;
@@ -717,7 +717,7 @@
         imgEl.addEventListener('click', (e) => {
           e.preventDefault();
           if (type === 'panoramic') {
-            open360Viewer(item.img);
+            open360Viewer(item.img, item.lat, item.lon); // Pass coordinates
           } else {
             openPhotoPopup(index);
           }
@@ -727,7 +727,7 @@
         const marker = L.marker([item.lat, item.lon]).addTo(map);
         marker.on('click', () => {
           if (type === 'panoramic') {
-            open360Viewer(item.img);
+            open360Viewer(item.img, item.lat, item.lon); // Pass coordinates
           } else {
             openPhotoPopup(index);
           }
@@ -793,7 +793,7 @@
     closeBtn.addEventListener('click', () => mapPopup.style.display = 'none');
 
     // 360 Viewer logic
-    function open360Viewer(imageUrl) {
+    function open360Viewer(imageUrl, lat, lon) {
       viewer360Container.style.display = 'block';
       mapPopup.style.display = 'flex'; // Show map popup
       document.getElementById('pano').innerHTML = '';
@@ -803,6 +803,9 @@
         autoLoad: true,
         showZoomCtrl: true,
       });
+      if (typeof lat === 'number' && typeof lon === 'number') {
+        map.setView([lat, lon], 18);
+      }
     }
 
     close360Btn.addEventListener('click', () => {
