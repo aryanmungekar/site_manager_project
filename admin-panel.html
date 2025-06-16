@@ -1,40 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Panel - SiteView</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Project View</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
-    h1 { color: #007bff; }
-    .hidden { display: none; }
+    h1, h2, h3 { color: #007bff; }
     .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    input, textarea, button, select { width: 100%; margin-top: 10px; padding: 10px; border-radius: 4px; border: 1px solid #ccc; }
-    button { background: #007bff; color: white; border: none; cursor: pointer; }
+    .media-entry { background: #f9f9f9; border: 1px solid #ddd; padding: 10px; margin-top: 10px; border-radius: 5px; }
+    button { padding: 8px 12px; margin-right: 5px; border-radius: 4px; border: none; background: #007bff; color: white; cursor: pointer; }
     button:hover { background: #0056b3; }
-    .project-block { margin-bottom: 30px; }
-    .media-entry { background: #f9f9f9; padding: 10px; border: 1px solid #ddd; margin-top: 10px; border-radius: 5px; }
+    video, img { max-width: 300px; display: block; margin-top: 5px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Admin Panel - SiteView</h1>
-
-    <div id="loginSection">
-      <input type="email" id="email" placeholder="Email">
-      <input type="password" id="password" placeholder="Password">
-      <button onclick="login()">Login</button>
-      <p id="loginError" style="color:red;"></p>
-    </div>
-
-    <div id="adminSection" class="hidden">
-      <button onclick="logout()" style="background:red; float:right;">Logout</button>
-      <h2>Projects</h2>
-      <div id="projectList"></div>
-    </div>
+    <h1 id="projectTitle">Project Details</h1>
+    <div id="content"></div>
+    <button onclick="goBack()">Back to Projects</button>
   </div>
 
-  <!-- Firebase SDK (compat version) -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-database-compat.js"></script>
@@ -51,95 +38,60 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
     const db = firebase.database();
 
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        document.getElementById('loginSection').classList.add('hidden');
-        document.getElementById('adminSection').classList.remove('hidden');
-        loadProjects();
-      } else {
-        document.getElementById('loginSection').classList.remove('hidden');
-        document.getElementById('adminSection').classList.add('hidden');
+    const params = new URLSearchParams(window.location.search);
+    const project = params.get('project');
+    document.getElementById('projectTitle').textContent = `Project: ${project}`;
+
+    const content = document.getElementById('content');
+
+    function goBack() {
+      window.location.href = 'admin.html';
+    }
+
+    db.ref(`data/${project}`).once('value').then(snapshot => {
+      const data = snapshot.val();
+      if (!data) {
+        content.innerHTML = '<p>No data found.</p>';
+        return;
       }
-    });
 
-    function login() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      auth.signInWithEmailAndPassword(email, password)
-        .catch(err => {
-          document.getElementById('loginError').textContent = err.message;
-        });
-    }
+      Object.entries(data).forEach(([date, categories]) => {
+        const dateBlock = document.createElement('div');
+        dateBlock.innerHTML = `<h2>Date: ${date}</h2>`;
 
-    function logout() {
-      auth.signOut();
-    }
+        Object.entries(categories).forEach(([category, entries]) => {
+          const catBlock = document.createElement('div');
+          catBlock.innerHTML = `<h3>Category: ${category}</h3>`;
 
-    function loadProjects() {
-      const projectList = document.getElementById('projectList');
-      projectList.innerHTML = '<p>Loading projects...</p>';
-
-      db.ref('data').once('value').then(snapshot => {
-        const data = snapshot.val();
-        projectList.innerHTML = '';
-        if (!data) {
-          projectList.innerHTML = '<p>No projects found.</p>';
-          return;
-        }
-
-        Object.entries(data).forEach(([projectName, dates]) => {
-          const projectBlock = document.createElement('div');
-          projectBlock.className = 'project-block';
-          projectBlock.innerHTML = `<h3>📁 ${projectName}</h3>`;
-
-          Object.entries(dates).forEach(([date, categories]) => {
-            const dateBlock = document.createElement('div');
-            dateBlock.innerHTML = `<h4>📅 ${date}</h4>`;
-
-            Object.entries(categories).forEach(([category, entries]) => {
-              const catBlock = document.createElement('div');
-              catBlock.innerHTML = `<h5>📂 ${category}</h5>`;
-
-              Object.entries(entries).forEach(([id, entry]) => {
-                const mediaEl = document.createElement('div');
-                mediaEl.className = 'media-entry';
-                mediaEl.innerHTML = `
-                  <strong>${entry.title}</strong><br>
-                  Lat: ${entry.lat}, Lon: ${entry.lon}<br>
-                  ${entry.img ? `<img src="${entry.img}" width="200">` : `<video width="200" controls src="${entry.videoUrl}"></video>`}
-                  <br>
-                  <button onclick="editEntry('${projectName}', '${date}', '${category}', '${id}')">Edit</button>
-                  <button onclick="deleteEntry('${projectName}', '${date}', '${category}', '${id}')" style="background:#dc3545;">Delete</button>
-                `;
-                catBlock.appendChild(mediaEl);
-              });
-
-              dateBlock.appendChild(catBlock);
-            });
-
-            projectBlock.appendChild(dateBlock);
+          Object.entries(entries).forEach(([id, entry]) => {
+            const entryEl = document.createElement('div');
+            entryEl.className = 'media-entry';
+            entryEl.innerHTML = `
+              <strong>${entry.title}</strong><br>
+              Lat: ${entry.lat}, Lon: ${entry.lon}<br>
+              ${entry.img ? `<img src="${entry.img}" />` : `<video controls src="${entry.videoUrl}"></video>`}<br>
+              <button onclick="alert('Edit UI coming soon')">Edit</button>
+              <button onclick="deleteEntry('${project}', '${date}', '${category}', '${id}')" style="background:red;">Delete</button>
+            `;
+            catBlock.appendChild(entryEl);
           });
 
-          projectList.appendChild(projectBlock);
+          dateBlock.appendChild(catBlock);
         });
+
+        content.appendChild(dateBlock);
       });
-    }
+    });
 
     function deleteEntry(project, date, category, id) {
       if (confirm("Are you sure you want to delete this entry?")) {
         db.ref(`data/${project}/${date}/${category}/${id}`).remove().then(() => {
           alert("Deleted successfully.");
-          loadProjects();
+          location.reload();
         });
       }
-    }
-
-    function editEntry(project, date, category, id) {
-      // In future phase: open a modal with form pre-filled
-      alert(`Edit UI coming soon for: ${project}/${date}/${category}/${id}`);
     }
   </script>
 </body>
