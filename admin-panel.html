@@ -24,7 +24,7 @@
     .project-info {
       display: flex; gap: 16px; padding: 12px; margin-bottom: 10px;
       background: white; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.1);
-      cursor: pointer; align-items: center;
+      cursor: pointer; align-items: center; position: relative;
     }
     .project-thumb {
       width: 64px; height: 64px; border-radius: 8px; object-fit: cover;
@@ -38,7 +38,28 @@
       font-size: 1.1em;
       color: #555;
       margin: 20px auto;
+      animation: spin 1s linear infinite;
     }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .top-bar {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+    }
+    #searchInput {
+      padding: 8px 12px; border-radius: 5px; border: 1px solid #ccc;
+      width: 250px; font-size: 1em;
+    }
+    #addProjectBtn {
+      padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;
+    }
+    #addProjectBtn:hover { background: #218838; }
+    .edit-btn {
+      position: absolute; top: 10px; right: 10px; background: #ffc107;
+      border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer;
+    }
+    .edit-btn:hover { background: #e0a800; }
   </style>
 </head>
 <body>
@@ -50,8 +71,11 @@
   </div>
 
   <div id="projectList">
-    <h2>All Projects</h2>
-    <div id="loader">Loading projects...</div>
+    <div class="top-bar">
+      <input type="text" id="searchInput" placeholder="Search projects..." oninput="filterProjects()">
+      <button id="addProjectBtn" onclick="addProject()">+ New Project</button>
+    </div>
+    <div id="loader">🔄 Loading projects...</div>
     <div id="projects"></div>
   </div>
 
@@ -85,6 +109,16 @@
         .catch(error => alert("Login failed: " + error.message));
     }
 
+    function addProject() {
+      alert('Add project clicked');
+    }
+
+    function editProject(key) {
+      alert('Edit project: ' + key);
+    }
+
+    let allProjects = [];
+
     function loadProjects() {
       const container = document.getElementById('projects');
       const loader = document.getElementById('loader');
@@ -101,21 +135,26 @@
 
         const keys = Object.keys(projectKeys);
         let loaded = 0;
+        allProjects = [];
 
         keys.forEach(projectKey => {
           db.ref(`projects/${projectKey}`).once('value').then(projSnap => {
             const data = projSnap.val();
             const div = document.createElement('div');
             div.className = 'project-info';
+            div.setAttribute('data-key', projectKey);
             div.innerHTML = `
               <img src="${data.thumbnail || 'default-thumb.jpg'}" class="project-thumb">
               <div>
                 <div class="project-title">${data.projectName || projectKey}</div>
                 <div class="project-location">${data.location || ''}</div>
                 <div class="project-file">${data.file || projectKey}</div>
-              </div>`;
+              </div>
+              <button class="edit-btn" onclick="event.stopPropagation(); editProject('${projectKey}')">Edit</button>
+            `;
             div.onclick = () => window.location.href = `project.html?project=${encodeURIComponent(projectKey)}`;
             container.appendChild(div);
+            allProjects.push({ key: projectKey, name: data.projectName, location: data.location, file: data.file, element: div });
 
             loaded++;
             if (loaded === keys.length) {
@@ -123,6 +162,16 @@
             }
           });
         });
+      });
+    }
+
+    function filterProjects() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      allProjects.forEach(p => {
+        const match = (p.name || '').toLowerCase().includes(search) ||
+                      (p.location || '').toLowerCase().includes(search) ||
+                      (p.file || '').toLowerCase().includes(search);
+        p.element.style.display = match ? '' : 'none';
       });
     }
   </script>
