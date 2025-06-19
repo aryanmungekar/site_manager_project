@@ -32,6 +32,13 @@
     }
     .project-title { font-weight: bold; font-size: 1.1em; color: #007bff; }
     .project-location, .project-file { color: #555; font-size: 0.95em; }
+    #loader {
+      display: none;
+      text-align: center;
+      font-size: 1.1em;
+      color: #555;
+      margin: 20px auto;
+    }
   </style>
 </head>
 <body>
@@ -44,6 +51,7 @@
 
   <div id="projectList">
     <h2>All Projects</h2>
+    <div id="loader">Loading projects...</div>
     <div id="projects"></div>
   </div>
 
@@ -54,15 +62,16 @@
 
   <script>
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_AUTH_DOMAIN",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_STORAGE_BUCKET",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID",
-      databaseURL: "YOUR_DATABASE_URL"
+      apiKey: "AIzaSyA1czRjhbfYGqGsGFul49vvjaSZnARSkVE",
+      authDomain: "siteview-3bc59.firebaseapp.com",
+      databaseURL: "https://siteview-3bc59-default-rtdb.firebaseio.com",
+      projectId: "siteview-3bc59",
+      storageBucket: "siteview-3bc59.appspot.com",
+      messagingSenderId: "941487179656",
+      appId: "1:941487179656:web:6d7c3eb02b61a0856a9c3d"
     };
     firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
     function login() {
       const email = document.getElementById("email").value;
@@ -77,25 +86,44 @@
     }
 
     function loadProjects() {
-      fetch('projects.json')
-        .then(res => res.json())
-        .then(data => {
-          const container = document.getElementById('projects');
-          container.innerHTML = '';
-          data.forEach(project => {
+      const container = document.getElementById('projects');
+      const loader = document.getElementById('loader');
+      container.innerHTML = '';
+      loader.style.display = 'block';
+
+      db.ref('projects').once('value').then(snapshot => {
+        const projectKeys = snapshot.val();
+        if (!projectKeys) {
+          loader.style.display = 'none';
+          container.innerHTML = '<p>No projects found.</p>';
+          return;
+        }
+
+        const keys = Object.keys(projectKeys);
+        let loaded = 0;
+
+        keys.forEach(projectKey => {
+          db.ref(`projects/${projectKey}`).once('value').then(projSnap => {
+            const data = projSnap.val();
             const div = document.createElement('div');
             div.className = 'project-info';
             div.innerHTML = `
-              <img src="${project.thumbnail || 'default-thumb.jpg'}" class="project-thumb">
+              <img src="${data.thumbnail || 'default-thumb.jpg'}" class="project-thumb">
               <div>
-                <div class="project-title">${project.projectName}</div>
-                <div class="project-location">${project.location}</div>
-                <div class="project-file">${project.file}</div>
+                <div class="project-title">${data.projectName || projectKey}</div>
+                <div class="project-location">${data.location || ''}</div>
+                <div class="project-file">${data.file || projectKey}</div>
               </div>`;
-            div.onclick = () => window.location.href = `project.html?project=${encodeURIComponent(project.file.replace('.json', ''))}`;
+            div.onclick = () => window.location.href = `project.html?project=${encodeURIComponent(projectKey)}`;
             container.appendChild(div);
+
+            loaded++;
+            if (loaded === keys.length) {
+              loader.style.display = 'none';
+            }
           });
         });
+      });
     }
   </script>
 </body>
