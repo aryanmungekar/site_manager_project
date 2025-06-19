@@ -162,21 +162,36 @@
       document.getElementById("projectModal").style.display = "none";
     }
 
+    function generateKeyFromName(name) {
+      const timestamp = Date.now();
+      return `${name.toLowerCase().replace(/\s+/g, '-')}-${timestamp}`;
+    }
+
     function saveProject() {
       const name = document.getElementById("projectName").value;
       const location = document.getElementById("location").value;
-      const file = document.getElementById("file").value;
       const thumbnail = document.getElementById("thumbnail").value;
       const client = document.getElementById("clientEmail").value || (currentUser ? currentUser.email : null);
-      if (!name || !file) return alert("Project name and file are required");
+      if (!name) return alert("Project name is required");
 
+      const key = editingKey || generateKeyFromName(name);
+      const file = `${key}.json`;
       const data = { projectName: name, location, file, thumbnail, client };
-      const key = editingKey || name.toLowerCase().replace(/\s+/g, '-');
 
       db.ref(`projects/${key}`).set(data).then(() => {
-        db.ref(`data/${key}`).once('value').then(snapshot => {
-          if (!snapshot.exists()) db.ref(`data/${key}`).set({});
-        });
+        const defaultData = {
+          [new Date().toISOString().split('T')[0]]: {
+            images: {
+              [firebase.database().ref().push().key]: {
+                title: "Sample Image",
+                img: "",
+                lat: null,
+                lon: null
+              }
+            }
+          }
+        };
+        db.ref(`data/${key}`).set(defaultData);
         closeModal();
         loadProjects();
       });
