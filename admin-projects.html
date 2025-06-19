@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Project Viewer</title>
+  <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f0f8ff; }
+    h1 { color: #007bff; }
+    .date-block { margin-top: 20px; padding: 10px; background: #fff; border: 1px solid #ccc; border-radius: 8px; }
+    .category { margin-left: 20px; }
+    .entry { margin-left: 40px; background: #eef; padding: 10px; border-radius: 5px; margin-top: 5px; }
+    img, video { max-width: 300px; display: block; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1 id="title">Project Data</h1>
+  <div id="content">Loading...</div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyA1czRjhbfYGqGsGFul49vvjaSZnARSkVE",
+      authDomain: "siteview-3bc59.firebaseapp.com",
+      databaseURL: "https://siteview-3bc59-default-rtdb.firebaseio.com",
+      projectId: "siteview-3bc59",
+      storageBucket: "siteview-3bc59.appspot.com",
+      messagingSenderId: "941487179656",
+      appId: "1:941487179656:web:6d7c3eb02b61a0856a9c3d"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const project = new URLSearchParams(location.search).get('project');
+    const content = document.getElementById('content');
+    const title = document.getElementById('title');
+
+    if (!project) {
+      content.innerHTML = '<p>No project specified in URL.</p>';
+    } else {
+      title.textContent = `Project: ${project}`;
+      db.ref(`data/${project}`).once('value').then(snapshot => {
+        const data = snapshot.val();
+        if (!data) {
+          content.innerHTML = '<p>No data found for this project.</p>';
+          return;
+        }
+        content.innerHTML = '';
+        Object.entries(data).forEach(([date, categories]) => {
+          const dateBlock = document.createElement('div');
+          dateBlock.className = 'date-block';
+          dateBlock.innerHTML = `<h2>${date}</h2>`;
+
+          Object.entries(categories).forEach(([cat, entries]) => {
+            const catDiv = document.createElement('div');
+            catDiv.className = 'category';
+            catDiv.innerHTML = `<h3>${cat}</h3>`;
+
+            Object.entries(entries).forEach(([id, entry]) => {
+              const entryDiv = document.createElement('div');
+              entryDiv.className = 'entry';
+              entryDiv.innerHTML = `
+                <strong>${entry.title || 'Untitled'}</strong><br>
+                Lat: ${entry.lat ?? 'N/A'}, Lon: ${entry.lon ?? 'N/A'}<br>
+                ${entry.img ? `<img src="${entry.img}" alt="Image">` : ''}
+                ${entry.videoUrl ? `<video controls src="${entry.videoUrl}"></video>` : ''}
+              `;
+              catDiv.appendChild(entryDiv);
+            });
+
+            dateBlock.appendChild(catDiv);
+          });
+
+          content.appendChild(dateBlock);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
