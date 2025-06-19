@@ -106,131 +106,154 @@
   <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-database-compat.js"></script>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyA1czRjhbfYGqGsGFul49vvjaSZnARSkVE",
-      authDomain: "siteview-3bc59.firebaseapp.com",
-      databaseURL: "https://siteview-3bc59-default-rtdb.firebaseio.com",
-      projectId: "siteview-3bc59",
-      storageBucket: "siteview-3bc59.appspot.com",
-      messagingSenderId: "941487179656",
-      appId: "1:941487179656:web:6d7c3eb02b61a0856a9c3d"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    window.addEventListener("DOMContentLoaded", () => {
+      const firebaseConfig = {
+        apiKey: "AIzaSyA1czRjhbfYGqGsGFul49vvjaSZnARSkVE",
+        authDomain: "siteview-3bc59.firebaseapp.com",
+        databaseURL: "https://siteview-3bc59-default-rtdb.firebaseio.com",
+        projectId: "siteview-3bc59",
+        storageBucket: "siteview-3bc59.appspot.com",
+        messagingSenderId: "941487179656",
+        appId: "1:941487179656:web:6d7c3eb02b61a0856a9c3d"
+      };
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.database();
 
-    let allProjects = [];
-    let editingKey = null;
+      let allProjects = [];
+      let editingKey = null;
+      let currentUser = null;
 
-    function login() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      firebase.auth().signInWithEmailAndPassword(email, password)
-        .then(() => {
-          document.getElementById("loginContainer").style.display = "none";
-          document.getElementById("projectList").style.display = "block";
-          loadProjects();
-        })
-        .catch(error => alert("Login failed: " + error.message));
-    }
+      document.getElementById("loginBtn").addEventListener("click", login);
+      document.getElementById("addProjectBtn").addEventListener("click", () => openModal());
+      document.getElementById("searchInput").addEventListener("input", filterProjects);
 
-    function openModal(projectKey = null) {
-      editingKey = projectKey;
-      const modal = document.getElementById("projectModal");
-      document.getElementById("modalTitle").textContent = editingKey ? "Edit Project" : "New Project";
-      if (editingKey) {
-        const project = allProjects.find(p => p.key === editingKey);
-        document.getElementById("projectName").value = project.name;
-        document.getElementById("location").value = project.location;
-        document.getElementById("file").value = project.file;
-        document.getElementById("thumbnail").value = project.thumbnail || "";
-      } else {
-        document.getElementById("projectName").value = "";
-        document.getElementById("location").value = "";
-        document.getElementById("file").value = "";
-        document.getElementById("thumbnail").value = "";
+      function login() {
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        firebase.auth().signInWithEmailAndPassword(email, password)
+          .then(userCredential => {
+            currentUser = userCredential.user;
+            document.getElementById("loginContainer").style.display = "none";
+            document.getElementById("projectList").style.display = "block";
+            loadProjects();
+          })
+          .catch(error => alert("Login failed: " + error.message));
       }
-      modal.style.display = "flex";
-    }
 
-    function closeModal() {
-      document.getElementById("projectModal").style.display = "none";
-    }
-
-    function saveProject() {
-      const name = document.getElementById("projectName").value;
-      const location = document.getElementById("location").value;
-      const file = document.getElementById("file").value;
-      const thumbnail = document.getElementById("thumbnail").value;
-      if (!name || !file) return alert("Project name and file are required");
-      const data = { projectName: name, location, file, thumbnail };
-      const key = editingKey || name.toLowerCase().replace(/\s+/g, '-');
-      db.ref(`projects/${key}`).set(data).then(() => {
-        closeModal();
-        loadProjects();
-      });
-    }
-
-    function editProject(key) {
-      openModal(key);
-    }
-
-    function loadProjects() {
-      const container = document.getElementById("projects");
-      const loader = document.getElementById("loader");
-      container.innerHTML = "";
-      loader.style.display = "block";
-      db.ref("projects").once("value").then(snapshot => {
-        const projectKeys = snapshot.val();
-        if (!projectKeys) {
-          loader.style.display = "none";
-          container.innerHTML = "<p>No projects found.</p>";
-          return;
+      function openModal(projectKey = null) {
+        editingKey = projectKey;
+        const modal = document.getElementById("projectModal");
+        document.getElementById("modalTitle").textContent = editingKey ? "Edit Project" : "New Project";
+        if (editingKey) {
+          const project = allProjects.find(p => p.key === editingKey);
+          document.getElementById("projectName").value = project.name;
+          document.getElementById("location").value = project.location;
+          document.getElementById("file").value = project.file;
+          document.getElementById("thumbnail").value = project.thumbnail || "";
+        } else {
+          document.getElementById("projectName").value = "";
+          document.getElementById("location").value = "";
+          document.getElementById("file").value = "";
+          document.getElementById("thumbnail").value = "";
         }
-        const keys = Object.keys(projectKeys);
-        let loaded = 0;
-        allProjects = [];
-        keys.forEach(projectKey => {
-          const data = projectKeys[projectKey];
-          const div = document.createElement("div");
-          div.className = "project-info";
-          div.setAttribute("data-key", projectKey);
-          div.innerHTML = `
-            <img src="${data.thumbnail || 'default-thumb.jpg'}" class="project-thumb">
-            <div>
-              <div class="project-title">${data.projectName || projectKey}</div>
-              <div class="project-location">${data.location || ''}</div>
-              <div class="project-file">${data.file || projectKey}</div>
-            </div>
-            <button class="edit-btn">Edit</button>
-          `;
-          div.querySelector(".edit-btn").addEventListener("click", function(e) {
-            e.stopPropagation();
-            editProject(projectKey);
-          });
-          div.addEventListener("click", function() {
-            window.location.href = `project.html?project=${encodeURIComponent(projectKey)}`;
-          });
-          container.appendChild(div);
-          allProjects.push({ key: projectKey, name: data.projectName, location: data.location, file: data.file, thumbnail: data.thumbnail, element: div });
-          loaded++;
-          if (loaded === keys.length) loader.style.display = "none";
+        modal.style.display = "flex";
+      }
+
+      function closeModal() {
+        document.getElementById("projectModal").style.display = "none";
+      }
+
+      function saveProject() {
+        const name = document.getElementById("projectName").value;
+        const location = document.getElementById("location").value;
+        const file = document.getElementById("file").value;
+        const thumbnail = document.getElementById("thumbnail").value;
+        if (!name || !file) return alert("Project name and file are required");
+
+        const data = {
+          projectName: name,
+          location,
+          file,
+          thumbnail,
+          client: currentUser ? currentUser.email : null
+        };
+
+        const key = editingKey || name.toLowerCase().replace(/\s+/g, '-');
+        const updates = {};
+        updates[`projects/${key}`] = data;
+        updates[`data/${key}`] = {}; // initialize data node for this project
+
+        db.ref().update(updates).then(() => {
+          closeModal();
+          loadProjects();
         });
-      });
-    }
+      }
 
-    function filterProjects() {
-      const search = document.getElementById("searchInput").value.toLowerCase();
-      allProjects.forEach(p => {
-        const match = (p.name || "").toLowerCase().includes(search) ||
-                      (p.location || "").toLowerCase().includes(search) ||
-                      (p.file || "").toLowerCase().includes(search);
-        p.element.style.display = match ? "" : "none";
-      });
-    }
+      function editProject(key) {
+        openModal(key);
+      }
 
-    document.getElementById("loginBtn").addEventListener("click", login);
-    document.getElementById("addProjectBtn").addEventListener("click", () => openModal());
-    document.getElementById("searchInput").addEventListener("input", filterProjects);
+      function loadProjects() {
+        const container = document.getElementById("projects");
+        const loader = document.getElementById("loader");
+        container.innerHTML = "";
+        loader.style.display = "block";
+        db.ref("projects").once("value").then(snapshot => {
+          const projectKeys = snapshot.val();
+          if (!projectKeys) {
+            loader.style.display = "none";
+            container.innerHTML = "<p>No projects found.</p>";
+            return;
+          }
+          const keys = Object.keys(projectKeys);
+          let loaded = 0;
+          allProjects = [];
+          keys.forEach(projectKey => {
+            const data = projectKeys[projectKey];
+            const div = document.createElement("div");
+            div.className = "project-info";
+            div.setAttribute("data-key", projectKey);
+            div.innerHTML = `
+              <img src="${data.thumbnail || 'default-thumb.jpg'}" class="project-thumb">
+              <div>
+                <div class="project-title">${data.projectName || projectKey}</div>
+                <div class="project-location">${data.location || ''}</div>
+                <div class="project-file">${data.file || projectKey}</div>
+              </div>
+              <button class="edit-btn">Edit</button>
+            `;
+            div.querySelector(".edit-btn").addEventListener("click", function(e) {
+              e.stopPropagation();
+              editProject(projectKey);
+            });
+            div.addEventListener("click", function() {
+              db.ref(`data/${projectKey}`).once("value").then(dataSnap => {
+                const projectData = dataSnap.val();
+                if (projectData) {
+                  alert(`Project Data for ${projectKey}:\n` + JSON.stringify(projectData, null, 2));
+                } else {
+                  alert(`No data found in 'data/${projectKey}'`);
+                }
+              });
+            });
+            container.appendChild(div);
+            allProjects.push({ key: projectKey, name: data.projectName, location: data.location, file: data.file, thumbnail: data.thumbnail, element: div });
+            loaded++;
+            if (loaded === keys.length) loader.style.display = "none";
+          });
+        });
+      }
+
+      function filterProjects() {
+        const search = document.getElementById("searchInput").value.toLowerCase();
+        allProjects.forEach(p => {
+          const match = (p.name || "").toLowerCase().includes(search) ||
+                        (p.location || "").toLowerCase().includes(search) ||
+                        (p.file || "").toLowerCase().includes(search);
+          p.element.style.display = match ? "" : "none";
+        });
+      }
+    });
   </script>
 </body>
 </html>
