@@ -233,14 +233,9 @@
           });
 
           div.addEventListener("click", function () {
-            db.ref(`data/${key}`).once('value').then(snap => {
-              if (snap.exists()) {
-                alert(`Data for ${key}:\n` + JSON.stringify(snap.val(), null, 2));
-              } else {
-                alert(`No data found in /data/${key}`);
-              }
-            });
-          });
+  window.location.href = `admin-projects.html?project=${encodeURIComponent(key)}`;
+});
+
 
           container.appendChild(div);
           allProjects.push({ key, name: proj.projectName, location: proj.location, file: proj.file, thumbnail: proj.thumbnail, client: proj.client, element: div });
