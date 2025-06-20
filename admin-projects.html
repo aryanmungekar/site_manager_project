@@ -3,20 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <title>Project Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-database-compat.js"></script>
   <style>
-    body { font-family: Arial; padding: 20px; background: #f0f8ff; }
+    body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 20px; }
     h1 { color: #007bff; }
-    .date-block { margin-top: 20px; padding: 10px; background: #fff; border: 1px solid #ccc; border-radius: 8px; }
+    .date-block {
+      background: #ffffff; padding: 15px; border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;
+    }
     .category { margin-left: 20px; }
-    .entry { margin-left: 40px; background: #eef; padding: 10px; border-radius: 5px; margin-top: 5px; }
-    img, video { max-width: 300px; display: block; margin-top: 10px; }
+    .entry {
+      background: #eef6ff; padding: 10px; margin: 10px 0;
+      border-radius: 5px; margin-left: 40px;
+    }
+    img, video { max-width: 100%; max-height: 300px; margin-top: 8px; }
+    .empty-message { color: #777; font-style: italic; }
   </style>
 </head>
 <body>
-  <h1 id="title">Project Data</h1>
-  <div id="content">Loading...</div>
+  <h1 id="title">Loading Project...</h1>
+  <div id="content">Loading data...</div>
 
   <script>
     const firebaseConfig = {
@@ -31,48 +40,54 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const project = new URLSearchParams(location.search).get('project');
-    const content = document.getElementById('content');
-    const title = document.getElementById('title');
+    const project = new URLSearchParams(location.search).get("project");
+    const content = document.getElementById("content");
+    const title = document.getElementById("title");
 
     if (!project) {
-      content.innerHTML = '<p>No project specified in URL.</p>';
+      title.textContent = "No Project Specified";
+      content.innerHTML = '<p class="empty-message">No project key found in URL. Please open this page from the admin panel.</p>';
     } else {
       title.textContent = `Project: ${project}`;
-      db.ref(`data/${project}`).once('value').then(snapshot => {
+      db.ref(`data/${project}`).once("value").then(snapshot => {
         const data = snapshot.val();
+        content.innerHTML = "";
         if (!data) {
-          content.innerHTML = '<p>No data found for this project.</p>';
+          content.innerHTML = `<p class="empty-message">No data found for project <strong>${project}</strong>.</p>`;
           return;
         }
-        content.innerHTML = '';
+
         Object.entries(data).forEach(([date, categories]) => {
-          const dateBlock = document.createElement('div');
-          dateBlock.className = 'date-block';
-          dateBlock.innerHTML = `<h2>${date}</h2>`;
+          const dateDiv = document.createElement("div");
+          dateDiv.className = "date-block";
+          dateDiv.innerHTML = `<h2>${date}</h2>`;
 
-          Object.entries(categories).forEach(([cat, entries]) => {
-            const catDiv = document.createElement('div');
-            catDiv.className = 'category';
-            catDiv.innerHTML = `<h3>${cat}</h3>`;
+          Object.entries(categories).forEach(([category, items]) => {
+            const catDiv = document.createElement("div");
+            catDiv.className = "category";
+            catDiv.innerHTML = `<h3>${category}</h3>`;
 
-            Object.entries(entries).forEach(([id, entry]) => {
-              const entryDiv = document.createElement('div');
-              entryDiv.className = 'entry';
-              entryDiv.innerHTML = `
-                <strong>${entry.title || 'Untitled'}</strong><br>
-                Lat: ${entry.lat ?? 'N/A'}, Lon: ${entry.lon ?? 'N/A'}<br>
-                ${entry.img ? `<img src="${entry.img}" alt="Image">` : ''}
-                ${entry.videoUrl ? `<video controls src="${entry.videoUrl}"></video>` : ''}
-              `;
-              catDiv.appendChild(entryDiv);
-            });
+            if (Array.isArray(items)) {
+              items.forEach(item => {
+                const entry = document.createElement("div");
+                entry.className = "entry";
+                entry.innerHTML = `
+                  <strong>${item.title || 'Untitled'}</strong><br>
+                  <small>Lat: ${item.lat ?? 'N/A'}, Lon: ${item.lon ?? 'N/A'}</small><br>
+                  ${item.img ? `<img src="${item.img}" alt="Image">` : ''}
+                  ${item.videoUrl ? `<video controls src="${item.videoUrl}"></video>` : ''}
+                `;
+                catDiv.appendChild(entry);
+              });
+            }
 
-            dateBlock.appendChild(catDiv);
+            dateDiv.appendChild(catDiv);
           });
 
-          content.appendChild(dateBlock);
+          content.appendChild(dateDiv);
         });
+      }).catch(err => {
+        content.innerHTML = `<p class="empty-message">Error loading project data: ${err.message}</p>`;
       });
     }
   </script>
