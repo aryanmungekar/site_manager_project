@@ -60,7 +60,7 @@
     const content = document.getElementById("content");
     const overlay = document.getElementById("overlay");
     const downloadBtn = document.getElementById("downloadBtn");
-    
+
     let allData = {}, selectedDate = '', selectedCategory = 'images';
     let mediaList = [], currentIndex = 0, selectedItems = [];
 
@@ -149,15 +149,27 @@
       downloadBtn.style.display = selectedItems.length ? 'inline-block' : 'none';
     }
 
-    function downloadSelected() {
-      selectedItems.forEach(item => {
-        const link = document.createElement('a');
-        link.href = item.img || item.videoUrl;
-        link.download = item.title || 'media';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      });
+    async function downloadSelected() {
+      for (const item of selectedItems) {
+        const url = item.img || item.videoUrl;
+        if (!url) continue;
+        try {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const blob = await response.blob();
+          const ext = blob.type.split('/')[1] || 'media';
+          const fileName = `${(item.title || 'media').replace(/\s+/g, '_')}.${ext}`;
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch (error) {
+          alert(`Failed to download media: ${error.message}`);
+          console.error('Download error:', error);
+        }
+      }
     }
 
     function showOverlay(index) {
