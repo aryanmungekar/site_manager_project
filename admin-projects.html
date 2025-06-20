@@ -7,85 +7,36 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    :root {
-      --primary: #007bff;
-      --primary-light: #e3f0ff;
-      --background: #f8fafc;
-      --card-bg: #fff;
-      --border-radius: 14px;
-      --shadow: 0 4px 24px rgba(0, 0, 0, 0.09);
-      --transition: 0.3s cubic-bezier(.4, 2, .6, 1);
-    }
-
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: var(--background);
-      margin: 0;
-      padding: 20px;
-      color: #222;
-    }
-
-    h1 {
-      color: var(--primary);
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .project-container {
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: 16px;
-      background: var(--card-bg);
-      border-radius: var(--border-radius);
-      box-shadow: var(--shadow);
-    }
-
-    .date-block {
-      margin-top: 30px;
-      padding: 15px;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: var(--border-radius);
-      box-shadow: 0 2px 8px #0001;
-    }
-
-    .category {
-      margin-left: 20px;
-    }
-
-    .entry {
-      margin: 12px 0;
-      padding: 12px;
-      border-radius: 10px;
-      background: var(--primary-light);
-      border-left: 4px solid var(--primary);
-    }
-
-    img, video {
-      max-width: 100%;
-      height: auto;
-      margin-top: 10px;
-      border-radius: 10px;
-    }
-
-    .btn-edit {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 6px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      float: right;
-      font-size: 0.85em;
-      margin-left: 10px;
-    }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f6f9; }
+    header { background: #007bff; color: white; padding: 20px; text-align: center; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+    .date-buttons { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .date-btn { padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    .date-btn.active { background: #0056b3; }
+    .category-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+    .category-tab { padding: 8px 16px; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; background: #eee; }
+    .category-tab.active { background: #007bff; color: white; border-color: #007bff; }
+    .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; }
+    .media-card { background: white; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 10px; cursor: pointer; }
+    .media-card img, .media-card video { width: 100%; border-radius: 6px; max-height: 180px; object-fit: cover; }
+    .media-meta { font-size: 12px; color: #555; margin-top: 5px; }
+    .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 999; }
+    .overlay-content img, .overlay-content video { max-width: 90vw; max-height: 90vh; border-radius: 10px; }
+    .nav-btn { position: absolute; top: 50%; font-size: 2em; color: white; background: none; border: none; cursor: pointer; transform: translateY(-50%); }
+    .nav-btn.left { left: 20px; }
+    .nav-btn.right { right: 20px; }
+    .download-btn { display: none; margin-bottom: 15px; padding: 10px 20px; background: green; color: white; border: none; border-radius: 5px; cursor: pointer; }
   </style>
 </head>
 <body>
-  <h1 id="title">Project Viewer</h1>
-  <div class="project-container">
-    <div id="content">Loading data...</div>
+  <header><h1 id="title">Project Viewer</h1></header>
+  <div class="container">
+    <div class="date-buttons" id="dateButtons"></div>
+    <div class="category-tabs" id="categoryTabs"></div>
+    <button id="downloadBtn" class="download-btn" onclick="downloadSelected()">Download Selected</button>
+    <div id="content"></div>
   </div>
+  <div id="overlay" class="overlay" onclick="closeOverlay(event)"></div>
 
   <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-database-compat.js"></script>
@@ -102,59 +53,135 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const project = new URLSearchParams(location.search).get("project");
-    const content = document.getElementById("content");
+    const project = new URLSearchParams(location.search).get("project") || 'ravet';
     const title = document.getElementById("title");
+    const dateButtons = document.getElementById("dateButtons");
+    const categoryTabs = document.getElementById("categoryTabs");
+    const content = document.getElementById("content");
+    const overlay = document.getElementById("overlay");
+    const downloadBtn = document.getElementById("downloadBtn");
+    
+    let allData = {}, selectedDate = '', selectedCategory = 'images';
+    let mediaList = [], currentIndex = 0, selectedItems = [];
 
-    if (!project) {
-      title.textContent = "No Project Specified";
-      content.innerHTML = '<p>No project key found in URL.</p>';
-    } else {
-      title.textContent = `Project: ${project}`;
-      db.ref(`data/${project}`).once("value").then(snapshot => {
-        const data = snapshot.val();
-        content.innerHTML = "";
-        if (!data) {
-          content.innerHTML = `<p>No data found for project <strong>${project}</strong>.</p>`;
-          return;
+    title.textContent = `Project: ${project}`;
+
+    db.ref(`data/${project}`).once('value').then(snap => {
+      const data = snap.val();
+      if (!data) return content.innerHTML = `<p>No data found.</p>`;
+      allData = data;
+      Object.keys(data).forEach((date, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'date-btn';
+        btn.textContent = date;
+        btn.onclick = () => {
+          selectedDate = date;
+          selectedCategory = 'images';
+          updateActive(dateButtons, btn);
+          renderCategories();
+        };
+        if (i === 0) {
+          selectedDate = date;
+          btn.classList.add('active');
         }
+        dateButtons.appendChild(btn);
+      });
+      renderCategories();
+    });
 
-        Object.entries(data).forEach(([date, categories]) => {
-          const dateDiv = document.createElement("div");
-          dateDiv.className = "date-block";
-          dateDiv.innerHTML = `<h2>${date}</h2>`;
+    function updateActive(container, activeBtn) {
+      [...container.children].forEach(btn => btn.classList.remove('active'));
+      activeBtn.classList.add('active');
+    }
 
-          Object.entries(categories).forEach(([category, items]) => {
-            const catDiv = document.createElement("div");
-            catDiv.className = "category";
-            catDiv.innerHTML = `<h3>${category}</h3>`;
+    function renderCategories() {
+      categoryTabs.innerHTML = '';
+      const categories = Object.keys(allData[selectedDate] || {});
+      categories.forEach(cat => {
+        const tab = document.createElement('div');
+        tab.className = 'category-tab';
+        tab.textContent = cat;
+        if (cat === selectedCategory) tab.classList.add('active');
+        tab.onclick = () => {
+          selectedCategory = cat;
+          updateActive(categoryTabs, tab);
+          renderMedia();
+        };
+        categoryTabs.appendChild(tab);
+      });
+      renderMedia();
+    }
 
-            Object.entries(items).forEach(([id, item]) => {
-              const entry = document.createElement("div");
-              entry.className = "entry";
-              entry.innerHTML = `
-                <button class="btn-edit" onclick="editEntry('${project}', '${date}', '${category}', '${id}')">Edit</button>
-                <strong>${item.title || 'Untitled'}</strong><br>
-                <small>Lat: ${item.lat ?? 'N/A'}, Lon: ${item.lon ?? 'N/A'}</small><br>
-                ${item.img ? `<img src="${item.img}" alt="Image">` : ''}
-                ${item.videoUrl ? `<video controls src="${item.videoUrl}"></video>` : ''}
-              `;
-              catDiv.appendChild(entry);
-            });
+    function renderMedia() {
+      content.innerHTML = '';
+      selectedItems = [];
+      mediaList = allData[selectedDate]?.[selectedCategory] || [];
+      downloadBtn.style.display = 'none';
 
-            dateDiv.appendChild(catDiv);
-          });
+      const grid = document.createElement('div');
+      grid.className = 'media-grid';
 
-          content.appendChild(dateDiv);
-        });
-      }).catch(err => {
-        content.innerHTML = `<p>Error loading project data: ${err.message}</p>`;
+      mediaList.forEach((item, i) => {
+        const card = document.createElement('div');
+        card.className = 'media-card';
+
+        let mediaTag = item.img
+          ? `<img src="${item.img}" onclick="showOverlay(${i})">`
+          : `<video src="${item.videoUrl}" controls onclick="event.stopPropagation(); showOverlay(${i})"></video>`;
+
+        card.innerHTML = `
+          <input type="checkbox" onchange="toggleSelection(${i}, this.checked)">
+          ${mediaTag}
+          <strong>${item.title || 'Untitled'}</strong>
+          <div class="media-meta">Lat: ${item.lat ?? 'N/A'}, Lon: ${item.lon ?? 'N/A'}</div>
+        `;
+
+        grid.appendChild(card);
+      });
+
+      content.appendChild(grid);
+    }
+
+    function toggleSelection(index, checked) {
+      const item = mediaList[index];
+      if (checked) selectedItems.push(item);
+      else selectedItems = selectedItems.filter(i => i !== item);
+      downloadBtn.style.display = selectedItems.length ? 'inline-block' : 'none';
+    }
+
+    function downloadSelected() {
+      selectedItems.forEach(item => {
+        const link = document.createElement('a');
+        link.href = item.img || item.videoUrl;
+        link.download = item.title || 'media';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       });
     }
 
-    function editEntry(project, date, category, id) {
-      alert(`Edit requested for:\nProject: ${project}\nDate: ${date}\nCategory: ${category}\nEntry ID: ${id}`);
-      // Future: load entry into form for editing
+    function showOverlay(index) {
+      currentIndex = index;
+      const item = mediaList[index];
+      overlay.innerHTML = `
+        <div class="overlay-content">
+          <button class="nav-btn left" onclick="navigate(-1); event.stopPropagation();">⟨</button>
+          ${item.img ? `<img src="${item.img}">` : `<video src="${item.videoUrl}" autoplay controls></video>`}
+          <button class="nav-btn right" onclick="navigate(1); event.stopPropagation();">⟩</button>
+        </div>`;
+      overlay.style.display = 'flex';
+    }
+
+    function navigate(dir) {
+      currentIndex = (currentIndex + dir + mediaList.length) % mediaList.length;
+      showOverlay(currentIndex);
+    }
+
+    function closeOverlay(e) {
+      if (e.target.id === 'overlay') {
+        overlay.style.display = 'none';
+        overlay.innerHTML = '';
+      }
     }
   </script>
 </body>
