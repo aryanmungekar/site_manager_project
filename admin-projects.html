@@ -4,29 +4,91 @@
   <meta charset="UTF-8">
   <title>Project Viewer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-database-compat.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 20px; }
-    h1 { color: #007bff; }
+    :root {
+      --primary: #007bff;
+      --primary-light: #e3f0ff;
+      --background: #f8fafc;
+      --card-bg: #fff;
+      --border-radius: 14px;
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.09);
+      --transition: 0.3s cubic-bezier(.4, 2, .6, 1);
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--background);
+      margin: 0;
+      padding: 20px;
+      color: #222;
+    }
+
+    h1 {
+      color: var(--primary);
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .project-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 16px;
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+    }
+
     .date-block {
-      background: #ffffff; padding: 15px; border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;
+      margin-top: 30px;
+      padding: 15px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: var(--border-radius);
+      box-shadow: 0 2px 8px #0001;
     }
-    .category { margin-left: 20px; }
+
+    .category {
+      margin-left: 20px;
+    }
+
     .entry {
-      background: #eef6ff; padding: 10px; margin: 10px 0;
-      border-radius: 5px; margin-left: 40px;
+      margin: 12px 0;
+      padding: 12px;
+      border-radius: 10px;
+      background: var(--primary-light);
+      border-left: 4px solid var(--primary);
     }
-    img, video { max-width: 100%; max-height: 300px; margin-top: 8px; }
-    .empty-message { color: #777; font-style: italic; }
+
+    img, video {
+      max-width: 100%;
+      height: auto;
+      margin-top: 10px;
+      border-radius: 10px;
+    }
+
+    .btn-edit {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      float: right;
+      font-size: 0.85em;
+      margin-left: 10px;
+    }
   </style>
 </head>
 <body>
-  <h1 id="title">Loading Project...</h1>
-  <div id="content">Loading data...</div>
+  <h1 id="title">Project Viewer</h1>
+  <div class="project-container">
+    <div id="content">Loading data...</div>
+  </div>
 
+  <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-database-compat.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA1czRjhbfYGqGsGFul49vvjaSZnARSkVE",
@@ -46,14 +108,14 @@
 
     if (!project) {
       title.textContent = "No Project Specified";
-      content.innerHTML = '<p class="empty-message">No project key found in URL. Please open this page from the admin panel.</p>';
+      content.innerHTML = '<p>No project key found in URL.</p>';
     } else {
       title.textContent = `Project: ${project}`;
       db.ref(`data/${project}`).once("value").then(snapshot => {
         const data = snapshot.val();
         content.innerHTML = "";
         if (!data) {
-          content.innerHTML = `<p class="empty-message">No data found for project <strong>${project}</strong>.</p>`;
+          content.innerHTML = `<p>No data found for project <strong>${project}</strong>.</p>`;
           return;
         }
 
@@ -67,19 +129,18 @@
             catDiv.className = "category";
             catDiv.innerHTML = `<h3>${category}</h3>`;
 
-            if (Array.isArray(items)) {
-              items.forEach(item => {
-                const entry = document.createElement("div");
-                entry.className = "entry";
-                entry.innerHTML = `
-                  <strong>${item.title || 'Untitled'}</strong><br>
-                  <small>Lat: ${item.lat ?? 'N/A'}, Lon: ${item.lon ?? 'N/A'}</small><br>
-                  ${item.img ? `<img src="${item.img}" alt="Image">` : ''}
-                  ${item.videoUrl ? `<video controls src="${item.videoUrl}"></video>` : ''}
-                `;
-                catDiv.appendChild(entry);
-              });
-            }
+            Object.entries(items).forEach(([id, item]) => {
+              const entry = document.createElement("div");
+              entry.className = "entry";
+              entry.innerHTML = `
+                <button class="btn-edit" onclick="editEntry('${project}', '${date}', '${category}', '${id}')">Edit</button>
+                <strong>${item.title || 'Untitled'}</strong><br>
+                <small>Lat: ${item.lat ?? 'N/A'}, Lon: ${item.lon ?? 'N/A'}</small><br>
+                ${item.img ? `<img src="${item.img}" alt="Image">` : ''}
+                ${item.videoUrl ? `<video controls src="${item.videoUrl}"></video>` : ''}
+              `;
+              catDiv.appendChild(entry);
+            });
 
             dateDiv.appendChild(catDiv);
           });
@@ -87,8 +148,13 @@
           content.appendChild(dateDiv);
         });
       }).catch(err => {
-        content.innerHTML = `<p class="empty-message">Error loading project data: ${err.message}</p>`;
+        content.innerHTML = `<p>Error loading project data: ${err.message}</p>`;
       });
+    }
+
+    function editEntry(project, date, category, id) {
+      alert(`Edit requested for:\nProject: ${project}\nDate: ${date}\nCategory: ${category}\nEntry ID: ${id}`);
+      // Future: load entry into form for editing
     }
   </script>
 </body>
