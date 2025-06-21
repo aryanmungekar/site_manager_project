@@ -25,7 +25,8 @@
     .nav-btn { position: absolute; top: 50%; font-size: 2em; color: white; background: none; border: none; cursor: pointer; transform: translateY(-50%); }
     .nav-btn.left { left: 20px; }
     .nav-btn.right { right: 20px; }
-    .download-btn { display: none; margin-bottom: 15px; padding: 10px 20px; background: green; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    .download-btn, .add-btn { display: none; margin-bottom: 15px; padding: 10px 20px; background: green; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    .add-btn { background: #28a745; float: right; }
   </style>
 </head>
 <body>
@@ -34,9 +35,19 @@
     <div class="date-buttons" id="dateButtons"></div>
     <div class="category-tabs" id="categoryTabs"></div>
     <button id="downloadBtn" class="download-btn" onclick="downloadSelected()">Download Selected</button>
+    <button id="addMediaBtn" class="add-btn" onclick="openAddMediaForm()">+ Add Media</button>
     <div id="content"></div>
   </div>
   <div id="overlay" class="overlay" onclick="closeOverlay(event)"></div>
+  <div id="formContainer" style="display:none; padding: 20px;">
+    <h3>Add/Edit Media</h3>
+    <input id="mediaTitle" placeholder="Title"><br><br>
+    <input id="mediaLat" placeholder="Latitude"><br><br>
+    <input id="mediaLon" placeholder="Longitude"><br><br>
+    <input id="mediaUrl" placeholder="Image or Video URL"><br><br>
+    <button onclick="saveMedia()">Save</button>
+    <button onclick="document.getElementById('formContainer').style.display='none'">Cancel</button>
+  </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.3.1/firebase-database-compat.js"></script>
@@ -60,6 +71,7 @@
     const content = document.getElementById("content");
     const overlay = document.getElementById("overlay");
     const downloadBtn = document.getElementById("downloadBtn");
+    const addMediaBtn = document.getElementById("addMediaBtn");
 
     let allData = {}, selectedDate = '', selectedCategory = 'images';
     let mediaList = [], currentIndex = 0, selectedItems = [];
@@ -79,6 +91,7 @@
           selectedCategory = 'images';
           updateActive(dateButtons, btn);
           renderCategories();
+          addMediaBtn.style.display = 'inline-block';
         };
         if (i === 0) {
           selectedDate = date;
@@ -195,6 +208,28 @@
         overlay.innerHTML = '';
       }
     }
+
+    function openAddMediaForm() {
+      document.getElementById('formContainer').style.display = 'block';
+    }
+
+    function saveMedia() {
+      const title = document.getElementById('mediaTitle').value;
+      const lat = parseFloat(document.getElementById('mediaLat').value);
+      const lon = parseFloat(document.getElementById('mediaLon').value);
+      const url = document.getElementById('mediaUrl').value;
+
+      const newEntry = url.includes('.mp4') || url.includes('video')
+        ? { title, lat, lon, videoUrl: url }
+        : { title, lat, lon, img: url };
+
+      const ref = db.ref(`data/${project}/${selectedDate}/${selectedCategory}`);
+      ref.push(newEntry).then(() => {
+        document.getElementById('formContainer').style.display = 'none';
+        location.reload();
+      });
+    }
   </script>
 </body>
 </html>
+
