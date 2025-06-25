@@ -6,6 +6,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+
+    <!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+
   <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -15,6 +20,57 @@
   <script src="https://cdn.jsdelivr.net/npm/pannellum/build/pannellum.js"></script>
 
   <style>
+
+    .bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: var(--nav-bg, #fff);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1px solid var(--border, #ccc);
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.08);
+  z-index: 999;
+}
+
+.bottom-nav a {
+  flex: 1;
+  text-align: center;
+  text-decoration: none;
+  color: var(--primary, #007bff);
+  font-size: 20px;
+  padding: 10px 0;
+  transition: transform 0.2s ease;
+}
+
+.bottom-nav a:hover {
+  transform: scale(1.2);
+}
+
+.fab-upload {
+  position: fixed;
+  bottom: 75px;
+  right: 18px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary, #007bff);
+  color: #fff;
+  font-size: 28px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  z-index: 1000;
+  transition: background 0.3s ease;
+}
+
+.fab-upload:hover {
+  background: #0056cc;
+}
+
     :root {
       --primary: #007bff;
       --primary-light: #e3f0ff;
@@ -89,7 +145,7 @@
       margin-bottom: 0;
     }
 
-    .project-info > div {
+    .project-info>div {
       display: flex;
       flex-direction: column;
       gap: 2px;
@@ -221,8 +277,8 @@
     }
 
     #imageRow img {
-      width: 100%;
-      height: 320px;
+      width: 95%;
+      height: 225px;
       object-fit: cover;
       cursor: pointer;
       border: 2px solid transparent;
@@ -249,7 +305,7 @@
       border: 2px solid var(--primary);
       border-radius: var(--border-radius);
       box-shadow: 0 0 18px rgba(0, 0, 0, 0.18);
-      z-index: 4100;
+      z-index: 5100;
       display: none;
       flex-direction: column;
       resize: both;
@@ -512,9 +568,19 @@
       }
 
       #imageRow {
-        grid-template-columns: 1fr;
-        gap: 14px;
+        grid-template-columns: repeat(2, 1fr);
+        /* 2 items per row */
+        gap: 5px;
         padding: 0 2vw;
+        max-width: 95%;
+        padding-bottom: 75px;
+      }
+
+      #imageRow img {
+        aspect-ratio: 4 / 3;
+        /* Consistent and clean */
+        height: auto;
+        max-width: 100%;
       }
 
       #popupImg {
@@ -560,12 +626,25 @@
   </div>
 
   <div id="categoryButtons" style="display: none;">
-    <button onclick="setCategory('drone')">Drone Images</button>
-    <button onclick="setCategory('panoramic')">Panoramic Images</button>
+    <button onclick="setCategory('images')">Images</button>
+    <button onclick="setCategory('panoramic')">Panoramic</button>
     <button onclick="setCategory('video')">Videos</button>
   </div>
 
   <div id="imageRow"></div>
+
+  <!-- Floating Upload Button -->
+<button class="fab-upload" onclick="alert('Upload clicked!')">
+  <i class="fas fa-plus"></i>
+</button>
+
+<!-- Bottom Navigation -->
+<nav class="bottom-nav">
+  <a href="index.html" title="Home"><i class="fas fa-home"></i></a>
+  <a href="messages.html" title="Messages"><i class="fas fa-comment-dots"></i></a>
+  <a href="account.html" title="Account"><i class="fas fa-user-circle"></i></a>
+</nav>
+
 
   <div id="mapPopup">
     <div id="mapHeader">
@@ -595,13 +674,22 @@
 
   <div id="overlay360"></div>
 
+  <div id="videoPopup"
+    style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:5000; justify-content:center; align-items:center; flex-direction:column;">
+    <button onclick="closeVideoPopup()"
+      style="position:absolute;top:24px;right:32px;font-size:2em;background:#fff;border:none;border-radius:8px;padding:4px 16px;cursor:pointer;">&times;</button>
+    <div id="videoPopupTitle" style="color:#fff;font-size:1.2em;margin-bottom:16px;"></div>
+    <video id="videoPopupPlayer" controls
+      style="max-width:90vw;max-height:70vh;border-radius:12px;box-shadow:0 8px 32px #000a;"></video>
+  </div>
+
   <script>
     let map, markers = [], latlngs = [], isMapInitialized = false;
     let currentIndex = 0;
     let imagesData = [];
     let fullData = {};
     let selectedDate = "";
-    let selectedCategory = 'drone';
+    let selectedCategory = 'images';
     let viewer360;
     let dateList = [];
     const dateSlider = document.getElementById('dateSlider');
@@ -659,7 +747,7 @@
           selectedDate = dateList[0];
           renderDateButtons();
           document.getElementById('categoryButtons').style.display = selectedDate ? 'flex' : 'none';
-          loadCategory('drone'); // Automatically load drone images for the first date
+          loadCategory('images'); // Automatically load images for the first date
         }
       })
       .catch(err => console.error('Failed to load JSON:', err));
@@ -710,30 +798,75 @@
       if (!imagesData.length) return;
 
       imagesData.forEach((item, index) => {
-        const imgEl = document.createElement('img');
-        imgEl.src = item.img || 'thumbnail.jpg';
-        imgEl.alt = item.title || type;
-        imgEl.title = item.title || type;
-        imgEl.addEventListener('click', (e) => {
-          e.preventDefault();
-          if (type === 'panoramic') {
-            open360Viewer(item.img, item.lat, item.lon); // Pass coordinates
-          } else {
-            openPhotoPopup(index);
-          }
-        });
-        imageRow.appendChild(imgEl);
+        let el;
+        if (type === 'video') {
+          // Video thumbnail support
+          el = document.createElement('div');
+          el.style.display = 'flex';
+          el.style.flexDirection = 'column';
+          el.style.alignItems = 'center';
+          el.style.justifyContent = 'center';
 
-        const marker = L.marker([item.lat, item.lon]).addTo(map);
-        marker.on('click', () => {
-          if (type === 'panoramic') {
-            open360Viewer(item.img, item.lat, item.lon); // Pass coordinates
-          } else {
-            openPhotoPopup(index);
+          const thumb = document.createElement('img');
+          thumb.src = item.thumbnail || 'thumbnail.jpg';
+          thumb.alt = item.title || 'Video';
+          thumb.style.width = '100%';
+          thumb.style.height = '180px';
+          thumb.style.objectFit = 'cover';
+          thumb.style.cursor = 'pointer';
+          thumb.onclick = () => openVideoPopup(item.videoUrl, item.title, item.lat, item.lon);
+          el.appendChild(thumb);
+
+          const caption = document.createElement('div');
+          caption.textContent = item.title || '';
+          caption.style.marginTop = '8px';
+          caption.style.color = '#007bff';
+          caption.style.fontWeight = 'bold';
+          el.appendChild(caption);
+
+          el.onclick = () => openVideoPopup(item.videoUrl, item.title, item.lat, item.lon);
+
+          // Add marker if lat/lon exists
+          if (item.lat && item.lon && map) {
+            const marker = L.marker([item.lat, item.lon]).addTo(map);
+            marker.on('click', () => openVideoPopup(item.videoUrl, item.title, item.lat, item.lon));
+            markers.push(marker);
+            latlngs.push([item.lat, item.lon]);
           }
-        });
-        markers.push(marker);
-        latlngs.push([item.lat, item.lon]);
+        } else if (type === 'panoramic') {
+          el = document.createElement('img');
+          el.src = item.img || 'thumbnail.jpg';
+          el.alt = item.title || type;
+          el.title = item.title || type;
+          el.addEventListener('click', (e) => {
+            e.preventDefault();
+            open360Viewer(item.img, item.lat, item.lon);
+          });
+          // Add marker if lat/lon exists
+          if (item.lat && item.lon && map) {
+            const marker = L.marker([item.lat, item.lon]).addTo(map);
+            marker.on('click', () => open360Viewer(item.img, item.lat, item.lon));
+            markers.push(marker);
+            latlngs.push([item.lat, item.lon]);
+          }
+        } else {
+          el = document.createElement('img');
+          el.src = item.img || 'thumbnail.jpg';
+          el.alt = item.title || type;
+          el.title = item.title || type;
+          el.addEventListener('click', (e) => {
+            e.preventDefault();
+            openPhotoPopup(index);
+          });
+          // Add marker if lat/lon exists
+          if (item.lat && item.lon && map) {
+            const marker = L.marker([item.lat, item.lon]).addTo(map);
+            marker.on('click', () => openPhotoPopup(index));
+            markers.push(marker);
+            latlngs.push([item.lat, item.lon]);
+          }
+        }
+        imageRow.appendChild(el);
       });
 
       if (latlngs.length) {
@@ -742,7 +875,7 @@
       }
     }
 
-        function setCategory(type) {
+    function setCategory(type) {
       selectedCategory = type;
       loadCategory(type);
     }
@@ -848,7 +981,27 @@
       }
       initializeMap();
     });
-    window.location.href = `projects.html?project=${encodeURIComponent(proj.file.replace('.json',''))}`;
+    window.location.href = `projects.html?project=${encodeURIComponent(proj.file.replace('.json', ''))}`;
+
+    function openVideoPopup(url, title, lat, lon) {
+      document.getElementById('videoPopupPlayer').src = url;
+      document.getElementById('videoPopupTitle').textContent = title || '';
+      document.getElementById('videoPopup').style.display = 'flex';
+
+      // Show and update the map popup if coordinates are available
+      if (typeof lat === 'number' && typeof lon === 'number' && map) {
+        mapPopup.style.display = 'flex';
+        map.setView([lat, lon], 18);
+      } else {
+        mapPopup.style.display = 'none';
+      }
+    }
+    function closeVideoPopup() {
+      document.getElementById('videoPopup').style.display = 'none';
+      document.getElementById('videoPopupPlayer').pause();
+      document.getElementById('videoPopupPlayer').src = '';
+      mapPopup.style.display = 'none'; // Hide map popup when video closes
+    }
   </script>
 </body>
 
